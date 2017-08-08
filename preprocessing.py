@@ -91,6 +91,8 @@ class Compound(object):
         if 'pmap' in d:
             self.source = d['pmap'].get('source', '')
             self.species_list = map(Species, d['pmap'].get('species', []))
+        else:
+            raise ValueError('Could not find a pmap for: ' + self.kegg_id)
 
     def get_stoich_vector(self, Nc):
         x = matrix(zeros((Nc, 1)))
@@ -248,6 +250,10 @@ class Reaction(object):
         for cid, count in Reaction.parse_formula_side(right).iteritems():
             sparse_reaction[cid] = sparse_reaction.get(cid, 0) + count
 
+        # remove compounds that are balanced out in the reaction,
+        # i.e. their coefficient is 0
+        sparse_reaction = dict(filter(lambda x: x[1] != 0,
+                                      sparse_reaction.iteritems()))
         return Reaction(sparse_reaction)
 
     @staticmethod

@@ -14,7 +14,7 @@ import argparse
 import logging
 import sys
 from numpy import sqrt
-from preprocessing import Preprocessing, Reaction
+from preprocessing import Preprocessing, Reaction, FARADAY
 
 
 def MakeParser():
@@ -37,22 +37,27 @@ args = parser.parse_args()
 
 logging.getLogger().setLevel(logging.WARNING)
 
-print 'pH: %.1f' % args.ph
-print 'I: %.1f M' % args.i
+print 'pH = %.1f' % args.ph
+print 'I = %.1f M' % args.i
 print 'Reaction: ' + args.reaction
 
 # parse the reaction
 reaction = Reaction.parse_formula(args.reaction)
 
-if not reaction.check_full_reaction_balancing():
-    sys.exit(-1)
+prep = Preprocessing()
 
-p = Preprocessing()
-
-# use the preprocessing class to calculate the estimated dG0 and uncertainty
-dG0_prime, U = p.dG0_prime(reaction, pH=args.ph, ionic_strength=args.i)
-
+n_e = reaction.check_half_reaction_balancing()
+dG0_prime, U = prep.dG0_prime(reaction, pH=args.ph,
+                              ionic_strength=args.i)
+dG0_prime = dG0_prime[0, 0]
 uncertainty = sqrt(U[0, 0])
-# uncertainty represents the 95% confidence interval (i.e. 1.96 times
-# the standard deviation)
-print u'dGr0 = %.2f \u00B1 %.2f kJ/mol' % (dG0_prime[0, 0], uncertainty)
+
+if n_e != 0:  # treat as a half-reaction
+    E0_prime_mV = 1000.0 * -dG0_prime / (n_e*FARADAY)
+    E0_uncertainty = 1000.0 * uncertainty / (n_e*FARADAY)
+    print u'E\'\u00B0 = %.1f \u00B1 %.1f mV' % (E0_prime_mV, E0_uncertainty)
+else:
+    print u'\u0394G\'\u00B0 = %.1f \u00B1 %.1f kJ/mol' % (dG0_prime, uncertainty)
+
+print r'* the range represents the 95% confidence interval due to ' + \
+       'Component Contribution estimation uncertainty'

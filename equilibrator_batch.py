@@ -46,25 +46,31 @@ if __name__ == '__main__':
         formula = row[0].strip()
         reaction = Reaction.parse_formula(formula)
         n_e = reaction.check_half_reaction_balancing()
-        if n_e == 0:
-            logging.warning('one of the input reactions is not a half-reaction'
-                            ': ' + formula)
-            continue
-        E0s = []
+
+        dG0_prime_list = []
+        uncertainty_list = []
         for pH in pHs:
             dG0_prime, U = prep.dG0_prime(reaction, pH=pH,
                                           ionic_strength=ionic_strength)
-            uncertainty = sqrt(U[0, 0])
-            E0_prime = 1000.0 * -dG0_prime / (n_e*FARADAY)  # mV
-            E0s.append(E0_prime)
+            dG0_prime_list.append(dG0_prime[0, 0])
+            uncertainty_list.append(sqrt(U[0, 0]))
 
-        reactions_and_energies.append((row, E0s))
+        if n_e != 0:  # treat as a half-reaction
+            E0_prime_mV = map(lambda g: '%.2f' % (1000.0 * -g / (n_e*FARADAY)),
+                              dG0_prime_list)
+            reactions_and_energies.append([formula, 'half-reaction',
+                                           'E\'0', 'mV'] + E0_prime_mV)
+        else:
+            dG0_prime_kj_mol = map(lambda g: '%.2f' % g,
+                                   dG0_prime_list)
+            reactions_and_energies.append([formula, 'reaction', 'dG\'0',
+                                           'kJ/mol'] + dG0_prime_kj_mol)
 
-    header = ['reaction']
-    pH_header = ['pH %.1f (mV)' % pH for pH in pHs]
-    header += pH_header
+    
+    # write all results to the output CSV file
     writer = csv.writer(args.outfile)
+    header = ['formula', 'type', 'estimated_value', 'unit']
+    header += ['pH %.1f' % pH for pH in pHs]
     writer.writerow(header)
-    for rxn_data, pH_E0 in reactions_and_energies:
-        energies_fmted = ['%.2f' % e for e in pH_E0]
-        writer.writerow(rxn_data + energies_fmted)
+    writer.writerows(reactions_and_energies)
+    args.outfile.flush()
