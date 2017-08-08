@@ -12,24 +12,34 @@ import csv
 from numpy import arange, sqrt
 import logging
 
+
+def g2e_str(g):
+    """Convert dG to dE in string form'"""
+    return '%.2f' % (1000.0 * -g / (n_e*FARADAY))
+
+
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description=
-                                     'Calculate reduction potentials for '
-                                     'a number of reactions.')
-    parser.add_argument('infile', type=argparse.FileType(),
-                        help='path to input file containing a '
-                        'list of reactions')
-    parser.add_argument('outfile', type=argparse.FileType('w'),
-                        help='path to output file')
-    parser.add_argument('--ionic_strength', default=0.2, type=int,
-                        help='ionic strength in molar units.')
-    parser.add_argument('--pH_min', default=5, type=int,
-                        help='lowest pH to produce E0 for.')
-    parser.add_argument('--pH_max', default=9, type=int,
-                        help='highest pH to produce E0 for.')
-    parser.add_argument('--pH_step', default=0.05, type=float,
-                        help='pH increment.')
+    parser = argparse.ArgumentParser(
+        description='Calculate potentials for a number of reactions.')
+    parser.add_argument(
+        'infile', type=argparse.FileType(),
+        help='path to input file containing reactions')
+    parser.add_argument(
+        'outfile', type=argparse.FileType('w'),
+        help='path to output file')
+    parser.add_argument(
+        '--ionic_strength', default=0.2, type=int,
+        help='ionic strength in molar units.')
+    parser.add_argument(
+        '--pH_min', default=5, type=int,
+        help='lowest pH to produce a potential for.')
+    parser.add_argument(
+        '--pH_max', default=9, type=int,
+        help='highest pH to produce a potential for.')
+    parser.add_argument(
+        '--pH_step', default=0.05, type=float,
+        help='pH increment between --pH_min and --pH_max.')
     logging.getLogger().setLevel(logging.WARNING)
 
     args = parser.parse_args()
@@ -50,23 +60,24 @@ if __name__ == '__main__':
         dG0_prime_list = []
         uncertainty_list = []
         for pH in pHs:
-            dG0_prime, U = prep.dG0_prime(reaction, pH=pH,
-                                          ionic_strength=ionic_strength)
+            dG0_prime, U = prep.dG0_prime(
+                reaction, pH=pH, ionic_strength=ionic_strength)
             dG0_prime_list.append(dG0_prime[0, 0])
             uncertainty_list.append(sqrt(U[0, 0]))
 
-        if n_e != 0:  # treat as a half-reaction
-            E0_prime_mV = list(map(lambda g: '%.2f' % (1000.0 * -g / (n_e*FARADAY)),
-                                   dG0_prime_list))
-            reactions_and_energies.append([formula, 'half-reaction',
-                                           'E\'0', 'mV'] + E0_prime_mV)
+        if n_e != 0:
+            # treat as a half-reaction
+            E0_prime_mV = list(map(g2e_str, dG0_prime_list))
+            data_list = [formula, 'half-reaction', 'E\'0', 'mV']
+            data_list.extend(E0_prime_mV)
+            reactions_and_energies.append(data_list)
         else:
             dG0_prime_kj_mol = list(map(lambda g: '%.2f' % g,
                                         dG0_prime_list))
-            reactions_and_energies.append([formula, 'reaction', 'dG\'0',
-                                           'kJ/mol'] + dG0_prime_kj_mol)
+            data_list = [formula, 'reaction', 'dG\'0', 'kJ/mol']
+            data_list.extend(dG0_prime_kj_mol)
+            reactions_and_energies.append(data_list)
 
-    
     # write all results to the output CSV file
     writer = csv.writer(args.outfile)
     header = ['formula', 'type', 'estimated_value', 'unit']

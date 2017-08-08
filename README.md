@@ -4,6 +4,7 @@ A command-line API with minimal dependencies for calculation of standard thermod
 
 # Current Features 
 
+* Example scripts for singleton and bulk calculations.
 * Calculation of standard Gibbs potentials of reactions.
 * Calculation of standard reduction potentials of half-cells.
 

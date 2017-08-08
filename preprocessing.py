@@ -317,6 +317,7 @@ class Reaction(object):
         """
             Returns:
                 The number of electrons that are 'missing' in the half-reaction
+                or None if the reaction is not atomwise-balanced.
         """
         atom_balance_dict = self._get_reaction_atom_balance()
         n_e = atom_balance_dict.pop('e-', 0)
