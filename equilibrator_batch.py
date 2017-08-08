@@ -56,13 +56,13 @@ if __name__ == '__main__':
             uncertainty_list.append(sqrt(U[0, 0]))
 
         if n_e != 0:  # treat as a half-reaction
-            E0_prime_mV = map(lambda g: '%.2f' % (1000.0 * -g / (n_e*FARADAY)),
-                              dG0_prime_list)
+            E0_prime_mV = list(map(lambda g: '%.2f' % (1000.0 * -g / (n_e*FARADAY)),
+                                   dG0_prime_list))
             reactions_and_energies.append([formula, 'half-reaction',
                                            'E\'0', 'mV'] + E0_prime_mV)
         else:
-            dG0_prime_kj_mol = map(lambda g: '%.2f' % g,
-                                   dG0_prime_list)
+            dG0_prime_kj_mol = list(map(lambda g: '%.2f' % g,
+                                        dG0_prime_list))
             reactions_and_energies.append([formula, 'reaction', 'dG\'0',
                                            'kJ/mol'] + dG0_prime_kj_mol)
 

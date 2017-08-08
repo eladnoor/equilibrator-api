@@ -14,7 +14,7 @@ import gzip
 import types
 import re
 
-COMPOUND_JSON_FNAME = 'cc_compounds.json.gz'
+COMPOUND_JSON_FNAME = 'cc_compounds.json'
 PREPROCESS_FNAME = 'cc_preprocess.npz'
 
 R = 8.31e-3   # kJ/(K*mol)
@@ -90,7 +90,7 @@ class Compound(object):
         self.no_dg_explanation = d.get('error', '')
         if 'pmap' in d:
             self.source = d['pmap'].get('source', '')
-            self.species_list = map(Species, d['pmap'].get('species', []))
+            self.species_list = list(map(Species, d['pmap'].get('species', [])))
         else:
             raise ValueError('Could not find a pmap for: ' + self.kegg_id)
 
@@ -127,13 +127,16 @@ class Compound(object):
                 The estimated delta G in the given conditions or None.
         """
         # Compute per-species transforms, scaled down by R*T.
-        dG0_prime_vec = array(map(lambda s: s.dG0_prime(pH, pMg, I),
-                                  self.species_list))
+        dG0_prime_vec = array(list(map(lambda s: s.dG0_prime(pH, pMg, I),
+                                       self.species_list)))
 
         # Numerical issues: taking a sum of exp(v) for |v| quite large.
         # Use the fact that we take a log later to offset all values by a
         # constant (the minimum value).
-        dG0_f_prime = -RT * logaddexp.reduce((-1.0 / RT) * dG0_prime_vec)
+        if len(dG0_prime_vec) > 0:
+            dG0_f_prime = -RT * logaddexp.reduce((-1.0 / RT) * dG0_prime_vec)
+        else:
+            raise Exception('compound contains no species')
 
         logging.info('KEGG_ID = %s, dG\'0_f = %.1f' %
                      (self.kegg_id, dG0_f_prime))
@@ -167,7 +170,7 @@ class Compound(object):
 class Reaction(object):
     # load formation energies from the JSON file
     COMPOUND_DICT = {}
-    for cd in json.load(gzip.open(COMPOUND_JSON_FNAME, 'r')):
+    for cd in json.load(open(COMPOUND_JSON_FNAME, 'r')):
         kegg_id = cd.get('CID', 'unknown')
         COMPOUND_DICT[kegg_id] = cd
 
@@ -244,16 +247,16 @@ class Reaction(object):
         right = tokens[1].strip()
 
         sparse_reaction = {}
-        for cid, count in Reaction.parse_formula_side(left).iteritems():
+        for cid, count in Reaction.parse_formula_side(left).items():
             sparse_reaction[cid] = sparse_reaction.get(cid, 0) - count
 
-        for cid, count in Reaction.parse_formula_side(right).iteritems():
+        for cid, count in Reaction.parse_formula_side(right).items():
             sparse_reaction[cid] = sparse_reaction.get(cid, 0) + count
 
         # remove compounds that are balanced out in the reaction,
         # i.e. their coefficient is 0
         sparse_reaction = dict(filter(lambda x: x[1] != 0,
-                                      sparse_reaction.iteritems()))
+                                      sparse_reaction.items()))
         return Reaction(sparse_reaction)
 
     @staticmethod
@@ -300,8 +303,7 @@ class Reaction(object):
 
     def _get_reaction_atom_balance(self):
         cids = list(self.kegg_ids())
-        coeffs = map(self.get_coeff, cids)
-        coeffs = matrix(coeffs)
+        coeffs = matrix(list(map(self.get_coeff, cids)))
 
         elements, Ematrix = self._get_element_matrix()
         conserved = coeffs * Ematrix
@@ -350,11 +352,11 @@ class Reaction(object):
         # if there are unbalanced elements, write a full report
         if len(atom_balance_dict) == 0:
             return True
-        logging.warning('unbalanced reaction: %s' % self.write_formula())
-        for elem, c in atom_balance_dict.iteritems():
+        logging.error('unbalanced reaction: %s' % self.write_formula())
+        for elem, c in atom_balance_dict.items():
             if c != 0:
-                logging.warning('there are %d more %s atoms on the '
-                                'right-hand side' % (c, elem))
+                logging.error('there are %d more %s atoms on the '
+                              'right-hand side' % (c, elem))
         return False
 
 
@@ -424,12 +426,12 @@ class Preprocessing(object):
     def dG0_prime(self, reactions, pH=DEFAULT_PH, pMg=DEFAULT_PMG,
                   ionic_strength=DEFAULT_IONIC_STRENGTH):
 
-        if not isinstance(reactions, types.ListType):
+        if not isinstance(reactions, list):
             reactions = [reactions]
 
         dG0_r_prime = map(lambda r: r.dG0_prime(pH, pMg, ionic_strength),
                           reactions)
-        dG0_r_prime = matrix(dG0_r_prime).T
+        dG0_r_prime = matrix(list(dG0_r_prime)).T
 
         X, G = self.reactions_to_matrices(reactions)
         U = X.T * self.C1 * X + \
@@ -451,7 +453,7 @@ class Preprocessing(object):
         """String representation."""
         left = []
         right = []
-        for kegg_id, coeff in sorted(d.iteritems()):
+        for kegg_id, coeff in sorted(d.items()):
             _s = Preprocessing.WriteCompoundAndCoeff(kegg_id, -coeff)
             if coeff < 0:
                 left.append(_s)
