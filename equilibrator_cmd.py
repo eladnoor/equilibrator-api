@@ -14,7 +14,7 @@ import argparse
 import logging
 import sys
 from numpy import sqrt
-from preprocessing import Preprocessing, Reaction, FARADAY
+from equilibrator_api import EquilibratorAPI, Reaction, FARADAY
 
 
 def MakeParser():
@@ -45,27 +45,30 @@ sys.stderr.flush()
 # parse the reaction
 reaction = Reaction.parse_formula(args.reaction)
 
-prep = Preprocessing()
+equilibrator = EquilibratorAPI()
 
 n_e = reaction.check_half_reaction_balancing()
 if n_e is None:
-    sys.stderr.write('Reaction is not atomically balanced')
+    logging.error('reaction is not chemically balanced')
     sys.exit(-1)
 
-dG0_prime, U = prep.dG0_prime(
+dG0_prime, U = equilibrator.dG0_prime(
     reaction, pH=args.ph, ionic_strength=args.i)
 dG0_prime = dG0_prime[0, 0]
-uncertainty = sqrt(U[0, 0])
+dG0_uncertainty = sqrt(U[0, 0])
 
-if n_e != 0:  # treat as a half-reaction
+if n_e == 0:
+    sys.stdout.write(u'\u0394G\'\u00B0 = %.1f \u00B1 %.1f kJ/mol\n' %
+                     (dG0_prime, dG0_uncertainty))
+else:  # treat as a half-reaction
+    logging.warning('This reaction isn\'t balanced, but can still be treated'
+                    ' as a half-reaction')
     E0_prime_mV = 1000.0 * -dG0_prime / (n_e*FARADAY)
-    E0_uncertainty = 1000.0 * uncertainty / (n_e*FARADAY)
+    E0_uncertainty = 1000.0 * dG0_uncertainty / (n_e*FARADAY)
     sys.stdout.write(
         u'E\'\u00B0 = %.1f \u00B1 %.1f mV\n' %
         (E0_prime_mV, E0_uncertainty))
-else:
-    sys.stdout.write(u'\u0394G\'\u00B0 = %.1f \u00B1 %.1f kJ/mol\n' %
-                     (dG0_prime, uncertainty))
+
 sys.stdout.flush()
 sys.stderr.write(r'* the range represents the 95% confidence interval'
                  ' due to Component Contribution estimation uncertainty\n')

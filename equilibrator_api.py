@@ -7,11 +7,9 @@ Created on Sun Aug  6 15:47:09 2017
 """
 
 import logging
-from numpy import matrix, array, load, zeros, logaddexp, sqrt, log, isnan, nan
+from numpy import matrix, array, load, zeros, logaddexp, sqrt, log, nan
 import os
 import json
-import gzip
-import types
 import re
 
 COMPOUND_JSON_FNAME = 'cc_compounds.json'
@@ -90,7 +88,8 @@ class Compound(object):
         self.no_dg_explanation = d.get('error', '')
         if 'pmap' in d:
             self.source = d['pmap'].get('source', '')
-            self.species_list = list(map(Species, d['pmap'].get('species', [])))
+            self.species_list = list(map(Species,
+                                         d['pmap'].get('species', [])))
         else:
             raise ValueError('Could not find a pmap for: ' + self.kegg_id)
 
@@ -228,9 +227,9 @@ class Reaction(object):
         return compound_bag
 
     @staticmethod
-    def parse_formula(formula, arrow='<=>'):
+    def parse_formula(formula, arrow='='):
         """
-            Parses a two-sided formula such as: 2 C00001 => C00002 + C00003
+            Parses a two-sided formula such as: 2 C00001 = C00002 + C00003
 
             Return:
                 The set of substrates, products and the reaction direction
@@ -353,15 +352,15 @@ class Reaction(object):
         # if there are unbalanced elements, write a full report
         if len(atom_balance_dict) == 0:
             return True
-        logging.error('unbalanced reaction: %s' % self.write_formula())
+        logging.warning('unbalanced reaction: %s' % self.write_formula())
         for elem, c in atom_balance_dict.items():
             if c != 0:
-                logging.error('there are %d more %s atoms on the '
-                              'right-hand side' % (c, elem))
+                logging.warning('there are %d more %s atoms on the '
+                                'right-hand side' % (c, elem))
         return False
 
 
-class Preprocessing(object):
+class EquilibratorAPI(object):
 
     def __init__(self):
         # load pre-processing matrices (for the uncertainty estimation)
@@ -455,12 +454,12 @@ class Preprocessing(object):
         left = []
         right = []
         for kegg_id, coeff in sorted(d.items()):
-            _s = Preprocessing.WriteCompoundAndCoeff(kegg_id, -coeff)
+            _s = EquilibratorAPI.WriteCompoundAndCoeff(kegg_id, -coeff)
             if coeff < 0:
                 left.append(_s)
             elif coeff > 0:
                 right.append(_s)
-        return "%s %s %s" % (' + '.join(left), '<=>', ' + '.join(right))
+        return "%s %s %s" % (' + '.join(left), '=', ' + '.join(right))
 
     @staticmethod
     def Analyze(self, x, g):
@@ -489,4 +488,4 @@ class Preprocessing(object):
 
 
 if __name__ == '__main__':
-    p = Preprocessing()
+    p = EquilibratorAPI()

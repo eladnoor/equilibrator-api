@@ -5,18 +5,13 @@ Created on Mon Jan 25th 2015
 @author: flamholz
 """
 
-from preprocessing import Preprocessing, Reaction, FARADAY
+from equilibrator_api import EquilibratorAPI, Reaction
 
 import argparse
 import csv
-from numpy import arange, sqrt
+from numpy import sqrt, nan
 import logging
-
-
-def g2e_str(g):
-    """Convert dG to dE in string form'"""
-    return '%.2f' % (1000.0 * -g / (n_e*FARADAY))
-
+import sys
 
 if __name__ == '__main__':
 
@@ -28,60 +23,36 @@ if __name__ == '__main__':
     parser.add_argument(
         'outfile', type=argparse.FileType('w'),
         help='path to output file')
-    parser.add_argument(
-        '--ionic_strength', default=0.2, type=int,
-        help='ionic strength in molar units.')
-    parser.add_argument(
-        '--pH_min', default=5, type=int,
-        help='lowest pH to produce a potential for.')
-    parser.add_argument(
-        '--pH_max', default=9, type=int,
-        help='highest pH to produce a potential for.')
-    parser.add_argument(
-        '--pH_step', default=0.05, type=float,
-        help='pH increment between --pH_min and --pH_max.')
+    parser.add_argument('--i', type=float,
+                        help='ionic strength in M',
+                        default=0.1)
+    parser.add_argument('--ph', type=float, help='pH level', default=7.0)
     logging.getLogger().setLevel(logging.WARNING)
 
     args = parser.parse_args()
 
-    ionic_strength = args.ionic_strength
+    sys.stderr.write('pH = %.1f\n' % args.ph)
+    sys.stderr.write('I = %.1f M\n' % args.i)
 
-    pHs = arange(args.pH_min, args.pH_max + args.pH_step, args.pH_step)
+    infile_lines = filter(None, map(str.strip, args.infile.readlines()))
+    reactions = map(Reaction.parse_formula, infile_lines)
 
-    prep = Preprocessing()
+    equilibrator = EquilibratorAPI()
 
-    reactions_and_energies = []
-    reader = csv.reader(args.infile)
-    for row in reader:
-        formula = row[0].strip()
-        reaction = Reaction.parse_formula(formula)
-        n_e = reaction.check_half_reaction_balancing()
+    dG0_prime, U = equilibrator.dG0_prime(
+            reactions, pH=args.ph, ionic_strength=args.i)
 
-        dG0_prime_list = []
-        uncertainty_list = []
-        for pH in pHs:
-            dG0_prime, U = prep.dG0_prime(
-                reaction, pH=pH, ionic_strength=ionic_strength)
-            dG0_prime_list.append(dG0_prime[0, 0])
-            uncertainty_list.append(sqrt(U[0, 0]))
-
-        if n_e != 0:
-            # treat as a half-reaction
-            E0_prime_mV = list(map(g2e_str, dG0_prime_list))
-            data_list = [formula, 'half-reaction', 'E\'0', 'mV']
-            data_list.extend(E0_prime_mV)
-            reactions_and_energies.append(data_list)
-        else:
-            dG0_prime_kj_mol = list(map(lambda g: '%.2f' % g,
-                                        dG0_prime_list))
-            data_list = [formula, 'reaction', 'dG\'0', 'kJ/mol']
-            data_list.extend(dG0_prime_kj_mol)
-            reactions_and_energies.append(data_list)
-
-    # write all results to the output CSV file
     writer = csv.writer(args.outfile)
-    header = ['formula', 'type', 'estimated_value', 'unit']
-    header += ['pH %.1f' % pH for pH in pHs]
+    header = ['reaction', 'pH', 'ionic strength [M]', 'dG\'0 [kJ/mol]',
+              'uncertainty [kJ/mol]', 'comment']
     writer.writerow(header)
-    writer.writerows(reactions_and_energies)
+    for i, r in enumerate(reactions):
+        if r.check_full_reaction_balancing():
+            row = [infile_lines[i], args.ph, args.i, dG0_prime[i, 0],
+                   sqrt(U[i, i]), '']
+        else:
+            row = [infile_lines[i], args.ph, args.i, nan, nan,
+                   'reaction is not chemically balanced']
+        writer.writerow(row)
+
     args.outfile.flush()
