@@ -43,7 +43,11 @@ sys.stderr.write('Reaction: %s\n' % args.reaction)
 sys.stderr.flush()
 
 # parse the reaction
-reaction = Reaction.parse_formula(args.reaction)
+try:
+    reaction = Reaction.parse_formula(args.reaction)
+except ValueError as e:
+    logging.error(str(e))
+    sys.exit(-1)
 
 equilibrator = EquilibratorAPI()
 
@@ -51,20 +55,16 @@ n_e = reaction.check_half_reaction_balancing()
 if n_e is None:
     logging.error('reaction is not chemically balanced')
     sys.exit(-1)
-
-dG0_prime, U = equilibrator.dG0_prime(
-    reaction, pH=args.ph, ionic_strength=args.i)
-dG0_prime = dG0_prime[0, 0]
-dG0_uncertainty = sqrt(U[0, 0])
-
-if n_e == 0:
+elif n_e == 0:
+    dG0_prime, dG0_uncertainty = equilibrator.dG0_prime(
+        reaction, pH=args.ph, ionic_strength=args.i)
     sys.stdout.write(u'\u0394G\'\u00B0 = %.1f \u00B1 %.1f kJ/mol\n' %
                      (dG0_prime, dG0_uncertainty))
 else:  # treat as a half-reaction
     logging.warning('This reaction isn\'t balanced, but can still be treated'
                     ' as a half-reaction')
-    E0_prime_mV = 1000.0 * -dG0_prime / (n_e*FARADAY)
-    E0_uncertainty = 1000.0 * dG0_uncertainty / (n_e*FARADAY)
+    E0_prime_mV, E0_uncertainty = equilibrator.E0_prime(
+            reaction, pH=args.ph, ionic_strength=args.i)
     sys.stdout.write(
         u'E\'\u00B0 = %.1f \u00B1 %.1f mV\n' %
         (E0_prime_mV, E0_uncertainty))

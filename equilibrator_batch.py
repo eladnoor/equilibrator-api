@@ -39,7 +39,7 @@ if __name__ == '__main__':
 
     equilibrator = EquilibratorAPI()
 
-    dG0_prime, U = equilibrator.dG0_prime(
+    dG0_prime, U = equilibrator.dG0_prime_multi(
             reactions, pH=args.ph, ionic_strength=args.i)
 
     writer = csv.writer(args.outfile)

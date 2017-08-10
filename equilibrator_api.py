@@ -15,6 +15,8 @@ import re
 COMPOUND_JSON_FNAME = 'cc_compounds.json'
 PREPROCESS_FNAME = 'cc_preprocess.npz'
 
+POSSIBLE_REACTION_ARROWS = ['<=>', '<=', '=>', '->', '<->', '=']
+
 R = 8.31e-3   # kJ/(K*mol)
 DEFAULT_TEMP = 298.15  # K
 DEFAULT_IONIC_STRENGTH = 0.1  # mM
@@ -213,38 +215,44 @@ class Reaction(object):
 
         compound_bag = {}
         for member in re.split('\s+\+\s+', s):
-            tokens = member.split(None, 1)
+            tokens = member.split(None, 1)  # check for stoichiometric coeff
             if len(tokens) == 0:
                 continue
             if len(tokens) == 1:
                 amount = 1
                 key = member
             else:
-                amount = float(tokens[0])
+                try:
+                    amount = float(tokens[0])
+                except ValueError:
+                    raise ValueError('could not parse the reaction side: %s'
+                                     % s)
                 key = tokens[1]
             compound_bag[key] = compound_bag.get(key, 0) + amount
 
         return compound_bag
 
     @staticmethod
-    def parse_formula(formula, arrow='='):
+    def parse_formula(formula):
         """
             Parses a two-sided formula such as: 2 C00001 = C00002 + C00003
 
             Return:
                 The set of substrates, products and the reaction direction
         """
-        tokens = formula.split(arrow)
+        tokens = []
+        for arrow in POSSIBLE_REACTION_ARROWS:
+            if formula.find(arrow) != -1:
+                tokens = formula.split(arrow, 2)
+                break
+            
         if len(tokens) < 2:
-            raise ValueError('Reaction does not contain the arrow sign (%s):'
-                             ' %s' % (arrow, formula))
-        if len(tokens) > 2:
-            raise ValueError('Reaction contains more than one arrow sign (%s):'
+            raise ValueError('Reaction does not contain an allowed arrow sign:'
                              ' %s' % (arrow, formula))
 
         left = tokens[0].strip()
         right = tokens[1].strip()
-
+        
         sparse_reaction = {}
         for cid, count in Reaction.parse_formula_side(left).items():
             sparse_reaction[cid] = sparse_reaction.get(cid, 0) - count
@@ -423,8 +431,28 @@ class EquilibratorAPI(object):
 
         return X, G
 
-    def dG0_prime(self, reactions, pH=DEFAULT_PH, pMg=DEFAULT_PMG,
+    def dG0_prime(self, reaction, pH=DEFAULT_PH, pMg=DEFAULT_PMG,
                   ionic_strength=DEFAULT_IONIC_STRENGTH):
+        """
+            Calculate the dG'0 of a single reaction or a list of reactions
+        """
+
+        dG0_r_prime = reaction.dG0_prime(pH, pMg, ionic_strength)
+
+        X, G = self.reactions_to_matrices([reaction])
+        U = X.T * self.C1 * X + \
+            X.T * self.C2 * G + \
+            G.T * self.C2.T * X + \
+            G.T * self.C3 * G
+
+        dG0_uncertainty = sqrt(U[0, 0])
+        return dG0_r_prime, dG0_uncertainty
+
+    def dG0_prime_multi(self, reactions, pH=DEFAULT_PH, pMg=DEFAULT_PMG,
+                        ionic_strength=DEFAULT_IONIC_STRENGTH):
+        """
+            Calculate the dG'0 of a single reaction or a list of reactions
+        """
 
         if not isinstance(reactions, list):
             reactions = [reactions]
@@ -440,6 +468,26 @@ class EquilibratorAPI(object):
             G.T * self.C3 * G
 
         return dG0_r_prime, U
+
+    def E0_prime(self, reaction, pH=DEFAULT_PH, pMg=DEFAULT_PMG,
+                 ionic_strength=DEFAULT_IONIC_STRENGTH):
+        """
+            Calculate the E'0 of a single half-reaction
+        """
+        n_e = reaction.check_half_reaction_balancing()
+        if n_e is None:
+            raise ValueError('reaction is not chemically balanced')
+        if n_e == 0:
+            raise ValueError('this is not a half-reaction, '
+                             'electrons are balanced')
+        
+        dG0_prime, dG0_uncertainty = self.dG0_prime(
+            reaction, pH=pH, pMg=pMg, ionic_strength=ionic_strength)
+        
+        E0_prime_mV = 1000.0 * -dG0_prime / (n_e*FARADAY)
+        E0_uncertainty = 1000.0 * dG0_uncertainty / (n_e*FARADAY)
+        
+        return E0_prime_mV, E0_uncertainty
 
     @staticmethod
     def WriteCompoundAndCoeff(kegg_id, coeff):
