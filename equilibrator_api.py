@@ -7,7 +7,7 @@ Created on Sun Aug  6 15:47:09 2017
 """
 
 import logging
-from numpy import matrix, array, load, zeros, logaddexp, sqrt, log, nan
+from numpy import matrix, array, load, zeros, ones, logaddexp, sqrt, log, nan, inf
 import os
 import json
 import re
@@ -193,13 +193,43 @@ class Reaction(object):
     def get_compound(self, kegg_id):
         return self.kegg_id_to_compound.get(kegg_id, None)
 
-    def dG0_prime(self, pH, pMg, I):
+    def dG0_prime(self, pH=DEFAULT_PH, pMg=DEFAULT_PMG,
+                  ionic_strength=DEFAULT_IONIC_STRENGTH):
         dG0_r_prime = 0
         for kegg_id in self.kegg_ids():
             coeff = self.get_coeff(kegg_id)
             compound = self.get_compound(kegg_id)
-            dG0_r_prime += coeff * compound.dG0_prime(pH, pMg, I)
+            dG0_r_prime += coeff * compound.dG0_prime(pH, pMg, ionic_strength)
         return dG0_r_prime
+
+    def reversibility_index(self, pH=DEFAULT_PH, pMg=DEFAULT_PMG,
+                            ionic_strength=DEFAULT_IONIC_STRENGTH):
+        """
+            Calculates the reversiblity index according to Noor et al. 2012:
+            https://doi.org/10.1093/bioinformatics/bts317
+
+            Returns:
+                ln_RI - the natural log of the RI
+        """
+        dG0_prime = self.dG0_prime(pH, pMg, ionic_strength)
+        return self.calculate_reversibility_index_from_dG0_prime(dG0_prime)
+
+    def calculate_reversibility_index_from_dG0_prime(self, dG0_prime):
+        """
+            Calculates the reversiblity index according to Noor et al. 2012:
+            https://doi.org/10.1093/bioinformatics/bts317
+
+            Returns:
+                ln_RI - the natural log of the RI
+        """
+        ids = set(self.kegg_ids()) - set(['C00001'])
+        sum_coeff = sum(map(self.get_coeff, ids))
+        abs_sum_coeff = sum(map(abs, (map(self.get_coeff, ids))))
+        if abs_sum_coeff == 0:
+            return inf
+        dGm_prime = dG0_prime + RT * sum_coeff * log(1e-3)
+        ln_RI = (2.0 / abs_sum_coeff) * dGm_prime / RT
+        return ln_RI
 
     @staticmethod
     def parse_formula_side(s):
@@ -245,14 +275,14 @@ class Reaction(object):
             if formula.find(arrow) != -1:
                 tokens = formula.split(arrow, 2)
                 break
-            
+
         if len(tokens) < 2:
             raise ValueError('Reaction does not contain an allowed arrow sign:'
                              ' %s' % (arrow, formula))
 
         left = tokens[0].strip()
         right = tokens[1].strip()
-        
+
         sparse_reaction = {}
         for cid, count in Reaction.parse_formula_side(left).items():
             sparse_reaction[cid] = sparse_reaction.get(cid, 0) - count
@@ -480,13 +510,13 @@ class EquilibratorAPI(object):
         if n_e == 0:
             raise ValueError('this is not a half-reaction, '
                              'electrons are balanced')
-        
+
         dG0_prime, dG0_uncertainty = self.dG0_prime(
             reaction, pH=pH, pMg=pMg, ionic_strength=ionic_strength)
-        
+
         E0_prime_mV = 1000.0 * -dG0_prime / (n_e*FARADAY)
         E0_uncertainty = 1000.0 * dG0_uncertainty / (n_e*FARADAY)
-        
+
         return E0_prime_mV, E0_uncertainty
 
     @staticmethod

@@ -60,6 +60,10 @@ elif n_e == 0:
         reaction, pH=args.ph, ionic_strength=args.i)
     sys.stdout.write(u'\u0394G\'\u00B0 = %.1f \u00B1 %.1f kJ/mol\n' %
                      (dG0_prime, dG0_uncertainty))
+
+    ln_RI = reaction.reversibility_index(pH=args.ph, ionic_strength=args.i)
+    sys.stdout.write(u'ln(Reversibility Index) = %.1f\n' % ln_RI)
+
 else:  # treat as a half-reaction
     logging.warning('This reaction isn\'t balanced, but can still be treated'
                     ' as a half-reaction')

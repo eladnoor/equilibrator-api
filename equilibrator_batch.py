@@ -44,15 +44,16 @@ if __name__ == '__main__':
 
     writer = csv.writer(args.outfile)
     header = ['reaction', 'pH', 'ionic strength [M]', 'dG\'0 [kJ/mol]',
-              'uncertainty [kJ/mol]', 'comment']
+              'uncertainty [kJ/mol]', 'ln(Reversibility Index)', 'comment']
     writer.writerow(header)
-    for i, r in enumerate(reactions):
+    for s, r, dg0, u in zip(infile_lines, reactions,
+                            dG0_prime.flat, U.diagonal().flat):
+        row = [s, args.ph, args.i]
         if r.check_full_reaction_balancing():
-            row = [infile_lines[i], args.ph, args.i, dG0_prime[i, 0],
-                   sqrt(U[i, i]), '']
+            ln_RI = r.calculate_reversibility_index_from_dG0_prime(dg0)
+            row += ['%.2f' % dg0, '%.2f' % sqrt(u), '%.2f' % ln_RI, '']
         else:
-            row = [infile_lines[i], args.ph, args.i, nan, nan,
-                   'reaction is not chemically balanced']
+            row += [nan, nan, nan, 'reaction is not chemically balanced']
         writer.writerow(row)
 
     args.outfile.flush()
