@@ -30,14 +30,18 @@ Finally you can calculate various things for this reaction
 if not rxn.check_full_reaction_balancing():
 	print '%s is not balanced', rxn
 
-# ionic_strength in molar units
-dG0_prime, dG0_uncertainty = equilibrator.dG0_prime(
+# You control the pH and ionic strength!
+# ionic strength is in Molar units.
+dG0_prime, dG0_uncertainty = eq_api.dG0_prime(
         rxn, pH=6.5, ionic_strength=0.2) 
+print u"dG0' = %.1f \u00B1 %.1f kJ/mol\n" % (
+        dG0_prime, dG0_uncertainty)
 
 # reversibility index is a measure of reaction reversibility
 # that accounts for stoichiometry. 
 # https://doi.org/10.1093/bioinformatics/bts317
-ln_RI = reaction.reversibility_index(pH=6.5, ionic_strength=0.2)
+ln_RI = rxn.reversibility_index(pH=6.5, ionic_strength=0.2)
+print u'ln(Reversibility Index) = %.1f\n' % ln_RI
 ```
 
 # dependenceis:
