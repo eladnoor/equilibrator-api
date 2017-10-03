@@ -206,11 +206,11 @@ def parseReactionTable(sbtab_file,file_name,export=False):
     import SBtab
 
     if sbtab_file.table_type != 'Reaction':
-        print 'The given TableType \"%s\" cannot be parsed. The TableType \"Reaction\" is required.'%sbtab_file.table_type
+        print('The given TableType \"%s\" cannot be parsed. The TableType \"Reaction\" is required.'%sbtab_file.table_type)
         return False
 
     if not '!ReactionFormula' in sbtab_file.columns:
-        print 'The given provided SBtab file misses the column \"ReactionFormula\".'
+        print('The given provided SBtab file misses the column \"ReactionFormula\".')
         return False
     else:
         for i,c in enumerate(sbtab_file.columns):

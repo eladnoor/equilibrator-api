@@ -591,6 +591,6 @@ class SBtabTable():
 
     def toDataFrame(self):
         import pandas as pd
-        column_names = map(lambda s: s[1:], self.columns)
+        column_names = list(map(lambda s: s[1:], self.columns))
         df = pd.DataFrame(data=self.getRows(), columns=column_names)
         return df

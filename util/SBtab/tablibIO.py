@@ -6,11 +6,8 @@ import tablib
 import tablib.core
 import csv
 import os
-import tablib.packages.odf.opendocument as opendocument
-from tablib.packages.odf.table import Table, TableRow, TableColumn, TableCell
-from tablib.packages.odf.text import P
 from util.SBtab import misc
-import tablib.packages.xlrd as xlrd
+import xlrd
 
 
 def sheets(self):  # Added to excess sheets of Databook
@@ -57,8 +54,6 @@ def importSet(fpath):
         return loadTSV(fpath, False)
     elif file_mimetype == 'text/tsv':
         return loadTSV(fpath, False)    
-    elif file_mimetype == 'application/vnd.oasis.opendocument.spreadsheet':
-        return loadODS(fpath, False, True)  # Second flag is for set import only
     elif file_mimetype == 'application/vnd.ms-excel' or file_mimetype == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
         return loadXLS(fpath, False, True)
     else:
@@ -200,105 +195,6 @@ def loadXLS(fpath, headers, set_only):
                 dset.headers = sheet.row_values(row)
             else:
                 dset.append(sheet.row_values(row))
-        dbook.add_sheet(dset)
-    if set_only:
-        return dbook.sheets()[0]
-    else:
-        return dbook
-
-
-def loadODS(fpath, headers, set_only):
-    class ODSReader():
-
-        # loads the file
-        def __init__(self, file):
-            self.doc = opendocument.load(file)
-            self.SHEETS = {}
-            for sheet in self.doc.spreadsheet.getElementsByType(Table):
-                self.readSheet(sheet)
-
-        # reads a sheet in the sheet dictionary, storing each sheet as an array
-        # (rows) of arrays (columns)
-        def readSheet(self, sheet):
-            name = sheet.getAttribute("name")
-            rows = sheet.getElementsByType(TableRow)
-            arrRows = []
-            cols = sheet.getElementsByType(TableColumn)
-            try:
-                longestRow = int(max([col.getAttribute("numbercolumnsrepeated") for col in cols]))
-            except:
-                longestRow = 0
-            # for each row
-            for row in rows:
-                row_comment = ""
-                arrCells = []
-                cells = row.getElementsByType(TableCell)
-
-                # for each cell
-                # get longestRow to not fill empty rows with blanks, shortens runtime
-                for cell in cells:
-                    # repeated value?
-                    repeat = cell.getAttribute("numbercolumnsrepeated")
-                    if(not repeat):
-                        repeat = 1
-
-                    ps = cell.getElementsByType(P)
-                    textContent = ""
-
-                    # for each text node
-                    for p in ps:
-                        for n in p.childNodes:
-                            if (n.nodeType == 3):
-                                textContent = textContent + unicode(n.data)
-
-                    if(textContent):
-                        if(textContent[0] != "#"):  # ignore comments cells
-                            for rr in range(int(repeat)):  # repeated?
-                                arrCells.append(textContent)
-
-                        else:
-                            row_comment = row_comment + textContent + " "
-                    else:
-                        if int(repeat) < longestRow:
-                            for rr in range(int(repeat)):  # repeated?
-                                arrCells.append('')  # for empty cells
-                        else:
-                            arrCells.append('')
-
-                # if row contained something
-                if(len(arrCells)):
-                    arrRows.append(arrCells)
-
-                # else:
-                #   print "Empty or commented row (", row_comment, ")"
-
-            self.SHEETS[name] = arrRows
-
-        # returns a sheet as an array (rows) of arrays (columns)
-        def getSheet(self, name):
-            return self.SHEETS[name]
-    from tablib.packages.xlrd import timemachine
-    dbook = tablib.Databook()
-    f = open(fpath, 'rb')
-    od = ODSReader(timemachine.BYTES_IO(f.read()))  # returns dict with sheetnames as keys
-    for sheet in sorted(od.SHEETS.iterkeys()):
-        dset = tablib.Dataset()
-        datals = []  # save in regular list first, ODSReader doesnt fill with blanks
-        dset.title = sheet
-        for row in od.getSheet(sheet):
-            datals.append(row)
-        try:
-            longest = max([len(x) for x in od.getSheet(sheet)])
-        except:
-            longest = 0
-        for i, item in enumerate(datals):
-            if len(item) < longest:
-                for i in range(longest - len(item)):
-                    item.append('')  # rows get all the same length
-            if (row == 0) and (headers):
-                dset.headers = item
-            else:
-                dset.append(item)
         dbook.add_sheet(dset)
     if set_only:
         return dbook.sheets()[0]

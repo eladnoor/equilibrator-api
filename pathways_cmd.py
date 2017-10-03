@@ -20,8 +20,8 @@ if __name__ == '__main__':
         'infile', type=argparse.FileType(),
         help='path to input file containing reactions')
     parser.add_argument(
-        'outfile', type=argparse.FileType('w'),
-        help='path to output file')
+        'outfile', type=str,
+        help='path to output PDF file')
     logging.getLogger().setLevel(logging.WARNING)
 
     args = parser.parse_args()
@@ -40,5 +40,5 @@ if __name__ == '__main__':
     mdf_res = pp.calc_mdf()
     
     output_pdf.savefig(mdf_res.conc_plot)
-    output_pdf.savefig(mdf_res.mdf_plot_svg)
+    output_pdf.savefig(mdf_res.mdf_plot)
     output_pdf.close()

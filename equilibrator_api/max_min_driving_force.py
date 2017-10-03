@@ -33,30 +33,8 @@ class CompoundMDFData(object):
         self.lb, self.ub = concentration_bounds
 
     @property
-    def link_url(self):
-        return '/compound?compoundId=%s' % self.compound.kegg_id
-
-    @property
     def bounds_equal(self):
         return self.lb == self.ub
-
-    @staticmethod
-    def html_conc(conc):
-        if conc <= 9.999e-4:
-            return '%.1f &mu;M' % (1e6*conc)
-        return '%.1f mM' % (1e3*conc)
-
-    @property
-    def html_concentration(self):
-        return self.html_conc(self.concentration)
-
-    @property
-    def html_lb(self):
-        return self.html_conc(self.lb)
-
-    @property
-    def html_ub(self):
-        return self.html_conc(self.ub)
 
 
 class PathwayMDFData(object):
@@ -125,46 +103,44 @@ class PathwayMDFData(object):
         ys_nz_shadow = ys[nz_shadow]
         concs_nz_shadow = concs[nz_shadow]
 
-        conc_figure = plt.figure(figsize=(8, 6))
-        plt.axes([0.2, 0.1, 0.9, 0.9])
-        plt.axvspan(1e-8, default_lb, color='y', alpha=0.5)
-        plt.axvspan(default_ub, 1e3, color='y', alpha=0.5)
-        plt.scatter(concs, ys, figure=conc_figure,
-                    label='Variable Concentrations')
-        plt.scatter(concs_equal, ys_equal, figure=conc_figure, color='y',
-                    label='Fixed Concentrations')
-        plt.scatter(concs_nz_shadow, ys_nz_shadow, figure=conc_figure,
-                    color='r', label='Variable Concentrations')
+        conc_figure, ax = plt.subplots(1, 1, figsize=(6, 6))
+        #ax = plt.axes([0.2, 0.1, 0.7, 0.8])
+        ax.axvspan(1e-8, default_lb, color='y', alpha=0.5)
+        ax.axvspan(default_ub, 1e3, color='y', alpha=0.5)
+        ax.scatter(concs, ys,
+                   label='Variable Concentrations')
+        ax.scatter(concs_equal, ys_equal, color='y',
+                   label='Fixed Concentrations')
+        ax.scatter(concs_nz_shadow, ys_nz_shadow,
+                   color='r', label='Variable Concentrations')
 
-        plt.xticks(family='sans-serif', figure=conc_figure)
-        plt.yticks(ys, cnames, family='sans-serif',
-            fontsize=6, figure=conc_figure)
-        plt.xlabel('Concentration (M)', family='sans-serif',
-            figure=conc_figure)
-        plt.xscale('log')
+        ax.set_yticks(ys)
+        ax.set_yticklabels(cnames, fontsize=9)
+        ax.set_xlabel('Concentration (M)')
+        ax.set_xscale('log')
 
-        plt.xlim(1e-7, 1.5e2)
-        plt.ylim(-1.5, len(self.compound_data) + 0.5)
-
+        ax.set_xlim(1e-7, 1.5)
+        ax.set_ylim(-1.5, len(self.compound_data) + 0.5)
+        
+        conc_figure.tight_layout()
         return conc_figure
     
     @property
-    def mdf_plot_svg(self):
+    def mdf_plot(self):
         dgs = [0] + [r.dGr for r in self.reaction_data]
         cumulative_dgs = np.cumsum(dgs)
 
         xs = np.arange(0, len(cumulative_dgs))
 
-        mdf_fig = plt.figure(figsize=(8, 8))
-        plt.plot(xs, cumulative_dgs,
-                 label='MDF-optimized concentrations')
-        plt.xticks(xs, family='sans-serif')
-        plt.yticks(family='sans-serif')
+        mdf_fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+        ax.plot(xs, cumulative_dgs, label='MDF-optimized concentrations')
+        ax.set_xticks(xs)
 
         # TODO: Consider using reaction IDs from the file as xticks?
-        plt.xlabel('After Reaction Step', family='sans-serif')
-        plt.ylabel("Cumulative $\Delta_r G'$ (kJ/mol)", family='sans-serif')
-        plt.legend(loc=3)
-        plt.title('MDF = %.1f' % self.mdf)
+        ax.set_xlabel('After Reaction Step')
+        ax.set_ylabel("Cumulative $\Delta_r G'$ (kJ/mol)")
+        ax.legend(loc='best')
+        ax.set_title('MDF = %.1f' % self.mdf)
 
+        mdf_fig.tight_layout()
         return mdf_fig
