@@ -8,8 +8,8 @@ Created on Thu Aug 10 17:22:11 2017
 
 import unittest
 
-from equilibrator_api import Reaction, EquilibratorAPI, FARADAY
-from numpy import sqrt
+from equilibrator_api.reaction import Reaction
+from equilibrator_api.component_contribution import ComponentContribution
 
 class TestReactionParsing(unittest.TestCase):
     
@@ -48,9 +48,8 @@ class TestReactionParsing(unittest.TestCase):
                             'C00008' :  1, 'C00009' :  1} # ATP + H2O = ADP + Pi
         reaction = Reaction(kegg_id_to_coeff)
 
-        equilibrator = EquilibratorAPI()
-        dG0_prime, dG0_uncertainty = equilibrator.dG0_prime(reaction, pH=7.0,
-                                                            ionic_strength=0.1)
+        cc = ComponentContribution(pH=7.0, ionic_strength=0.1)
+        dG0_prime, dG0_uncertainty = cc.dG0_prime(reaction)
         
         self.assertAlmostEqual(dG0_prime, -26.4, 1)
         self.assertAlmostEqual(dG0_uncertainty, 0.6, 1)
@@ -59,9 +58,8 @@ class TestReactionParsing(unittest.TestCase):
         kegg_id_to_coeff = {'C00036' : -1, 'C00149' : 1}  # oxaloacetate = malate
         reaction = Reaction(kegg_id_to_coeff)
 
-        equilibrator = EquilibratorAPI()
-        E0_prime_mV, E0_uncertainty = equilibrator.E0_prime(reaction, pH=7.0,
-                                                            ionic_strength=0.1)
+        cc = ComponentContribution(pH=7.0, ionic_strength=0.1)
+        E0_prime_mV, E0_uncertainty = cc.E0_prime(reaction)
         
         self.assertAlmostEqual(E0_prime_mV, -175.2, 1)
         self.assertAlmostEqual(E0_uncertainty, 5.3, 1)

@@ -144,7 +144,7 @@ class ComponentContribution(object):
             raise ValueError('this is not a half-reaction, '
                              'electrons are balanced')
 
-        dG0_prime, dG0_uncertainty = self.dG0_prime()
+        dG0_prime, dG0_uncertainty = self.dG0_prime(reaction)
 
         E0_prime_mV = 1000.0 * -dG0_prime / (n_e*util.FARADAY)
         E0_uncertainty = 1000.0 * dG0_uncertainty / (n_e*util.FARADAY)
