@@ -13,8 +13,8 @@ already cached in our database), at a given pH and I.
 import argparse
 import logging
 import sys
-from numpy import sqrt
-from equilibrator_api import EquilibratorAPI, Reaction, FARADAY
+from equilibrator_api.component_contribution import ComponentContribution
+from equilibrator_api.reaction import Reaction
 
 
 def MakeParser():
@@ -49,7 +49,7 @@ except ValueError as e:
     logging.error(str(e))
     sys.exit(-1)
 
-equilibrator = EquilibratorAPI()
+equilibrator = ComponentContribution()
 
 n_e = reaction.check_half_reaction_balancing()
 if n_e is None:

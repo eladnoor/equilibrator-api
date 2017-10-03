@@ -5,12 +5,13 @@ Created on Mon Jan 25th 2015
 @author: flamholz
 """
 
-from equilibrator_api import EquilibratorAPI, Reaction
+from equilibrator_api.component_contribution import ComponentContribution
+from equilibrator_api.reaction import Reaction
 
+import logging
 import argparse
 import csv
 from numpy import sqrt, nan
-import logging
 import sys
 
 if __name__ == '__main__':
@@ -34,10 +35,10 @@ if __name__ == '__main__':
     sys.stderr.write('pH = %.1f\n' % args.ph)
     sys.stderr.write('I = %.1f M\n' % args.i)
 
-    infile_lines = filter(None, map(str.strip, args.infile.readlines()))
-    reactions = map(Reaction.parse_formula, infile_lines)
+    infile_lines = list(filter(None, map(str.strip, args.infile.readlines())))
+    reactions = list(map(Reaction.parse_formula, infile_lines))
 
-    equilibrator = EquilibratorAPI()
+    equilibrator = ComponentContribution()
 
     dG0_prime, U = equilibrator.dG0_prime_multi(
             reactions, pH=args.ph, ionic_strength=args.i)

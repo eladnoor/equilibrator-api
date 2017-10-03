@@ -11,4 +11,6 @@ A command-line API with minimal dependencies for calculation of standard thermod
 # dependenceis:
 - python 2.7
 - numpy (preferably >= 1.12.0)
-
+- scipy (preferably >= 0.19.1)
+- matplotlib (2.0.2)
+- PuLP (1.6.8)
