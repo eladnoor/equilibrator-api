@@ -10,19 +10,30 @@ import matplotlib.pyplot as plt
 
 class ReactionMDFData(object):
 
-    def __init__(self, reaction, flux, dGr, shadow_price):
+    def __init__(self, reaction, flux, dG0, dGm, dGr, shadow_price):
         """
         Args:
             reaction: kegg reaction object.
                 should be set to contain user-defined dG0
             flux: amount of relative flux in pathway.
+            dG0: dG in standard (1M) conditions.
+            dGm: dG in physiological (1mM) conditions.
             dGr: dG in MDF conditions.
             shadow_price: shadow price associated with this rxn.
         """
         self.reaction = reaction
         self.flux = flux
+        self.dG0 = dG0
+        self.dGm = dGm
         self.dGr = dGr
         self.shadow_price = shadow_price
+
+    @property
+    def as_dict(self):
+        return {'reaction': self.reaction.write_formula(),
+                'flux': self.flux, 'dGr': self.dGr,
+                'dGm': self.dGm, 'dG0': self.dG0,
+                'shadow_price': self.shadow_price}
 
 class CompoundMDFData(object):
     def __init__(self, compound, concentration_bounds,
@@ -36,6 +47,13 @@ class CompoundMDFData(object):
     def bounds_equal(self):
         return self.lb == self.ub
 
+    @property
+    def as_dict(self):
+        return {'compound': self.compound,
+                'concentration': self.concentration,
+                'lb': self.lb,
+                'ub': self.ub,
+                'shadow_price': self.shadow_price}
 
 class PathwayMDFData(object):
 
@@ -43,21 +61,25 @@ class PathwayMDFData(object):
         self.parsed_pathway = parsed_pathway
         self.mdf_result = mdf_result
         self.model = mdf_result.model
-
-        rxns = parsed_pathway.reactions
-        fluxes = parsed_pathway.fluxes
-        dGs = self.mdf_result.dG_r_prime_adj.flatten().tolist()[0]
-        prices = self.mdf_result.reaction_prices.flatten().tolist()[0]
+        
+        rdata = [self.parsed_pathway.reactions, 
+                 self.parsed_pathway.fluxes,
+                 self.parsed_pathway.dG0_r_prime,
+                 self.parsed_pathway.dGm_r_prime,
+                 self.mdf_result.dG_r_prime_adj.flatten().tolist()[0],
+                 self.mdf_result.reaction_prices.flatten().tolist()[0]]
+        
         self.reaction_data = [
-            ReactionMDFData(*t) for t in zip(rxns, fluxes, dGs, prices)]
+            ReactionMDFData(*t) for t in zip(*rdata)]
 
         compound_ids = parsed_pathway.compound_kegg_ids
+        compound_names = parsed_pathway.compound_names
         cbounds = [self.model.concentration_bounds.GetBoundTuple(cid)
                    for cid in compound_ids]
         concs = self.mdf_result.concentrations.flatten().tolist()[0]
         prices = self.mdf_result.compound_prices.flatten().tolist()[0]
         self.compound_data = [CompoundMDFData(*t)
-                              for t in zip(compound_ids, cbounds, concs, prices)]
+                              for t in zip(compound_names, cbounds, concs, prices)]
 
     @property
     def mdf(self):
@@ -103,7 +125,7 @@ class PathwayMDFData(object):
         ys_nz_shadow = ys[nz_shadow]
         concs_nz_shadow = concs[nz_shadow]
 
-        conc_figure, ax = plt.subplots(1, 1, figsize=(6, 6))
+        conc_figure, ax = plt.subplots(1, 1, figsize=(9, 6))
         #ax = plt.axes([0.2, 0.1, 0.7, 0.8])
         ax.axvspan(1e-8, default_lb, color='y', alpha=0.5)
         ax.axvspan(default_ub, 1e3, color='y', alpha=0.5)
@@ -127,20 +149,45 @@ class PathwayMDFData(object):
     
     @property
     def mdf_plot(self):
+        dgms = [0] + [r.dGm for r in self.reaction_data]
+        cumulative_dgms = np.cumsum(dgms)
+
         dgs = [0] + [r.dGr for r in self.reaction_data]
         cumulative_dgs = np.cumsum(dgs)
 
-        xs = np.arange(0, len(cumulative_dgs))
+        xticks = np.arange(0, len(cumulative_dgs))
+        xticklabels = [''] + [r.reaction.reaction_id for r in self.reaction_data]
 
-        mdf_fig, ax = plt.subplots(1, 1, figsize=(6, 6))
-        ax.plot(xs, cumulative_dgs, label='MDF-optimized concentrations')
-        ax.set_xticks(xs)
+        mdf_fig, ax = plt.subplots(1, 1, figsize=(9, 6))
+        ax.plot(cumulative_dgms, label='Physiological concentrations (1 mM)',
+                color='blue')
+        ax.plot(cumulative_dgs, label='MDF-optimized concentrations',
+                color='green')
+        ax.set_xticks(xticks)
+        ax.set_xticklabels(xticklabels, rotation=45, ha='right')
+        ax.grid(color='grey', linestyle='--', linewidth=1, alpha=0.2)
 
         # TODO: Consider using reaction IDs from the file as xticks?
-        ax.set_xlabel('After Reaction Step')
+        ax.set_xlabel('Reaction Step')
         ax.set_ylabel("Cumulative $\Delta_r G'$ (kJ/mol)")
         ax.legend(loc='best')
         ax.set_title('MDF = %.1f' % self.mdf)
 
         mdf_fig.tight_layout()
         return mdf_fig
+
+    @property
+    def report_reactions(self):
+        """
+            Return a list of dictionaries with the dGm, dG' and shadow price
+            of each reaction in the model
+        """
+        return [r.as_dict for r in self.reaction_data]
+
+    @property
+    def report_compounds(self):
+        """
+            Return a list of dictionaries with the dGm, dG' and shadow price
+            of each reaction in the model
+        """
+        return [c.as_dict for c in self.compound_data]

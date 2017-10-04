@@ -23,7 +23,9 @@ class Reaction(object):
         kegg_id = cd.get('CID', 'unknown')
         COMPOUND_DICT[kegg_id] = cd
 
-    def __init__(self, kegg_id_to_coeff):
+    REACTION_COUNTER = 0
+
+    def __init__(self, kegg_id_to_coeff, rid=None):
         self.kegg_id_to_coeff = kegg_id_to_coeff
 
         # Create the relevant "Compound" objects and store in a dictionary
@@ -32,7 +34,11 @@ class Reaction(object):
             compound = Compound(Reaction.COMPOUND_DICT[kegg_id])
             self.kegg_id_to_compound[kegg_id] = compound
         
-        self.reaction_kegg_id = 'R00000'
+        if rid is not None:
+            self.reaction_id = rid
+        else:
+            self.reaction_id = 'R%05d' % Reaction.REACTION_COUNTER
+            Reaction.REACTION_COUNTER += 1
         
     def kegg_ids(self):
         return self.kegg_id_to_coeff.keys()
@@ -55,6 +61,38 @@ class Reaction(object):
             dG0_r_prime += coeff * compound.dG0_prime(pH, pMg, ionic_strength)
         return dG0_r_prime
 
+    def _GetSumCoeff(self):
+        """
+            Calculate the sum of all coefficients (excluding water).
+            This is useful for shifting the dG'0 to another set of standard
+            concentrations (e.g. 1 mM)
+        """
+        ids = set(self.kegg_ids()) - set(['C00001'])
+        sum_coeff = sum(map(self.get_coeff, ids))
+        return sum_coeff
+
+    def _GetAbsSumCoeff(self):
+        """
+            Calculate the sum of all coefficients (excluding water) in
+            absolute value.
+            This is useful for calculating the reversibility index.
+        """
+        ids = set(self.kegg_ids()) - set(['C00001'])
+        abs_sum_coeff = sum(map(abs, (map(self.get_coeff, ids))))
+        return abs_sum_coeff     
+
+    def dGm_correction(self):
+        """
+            Calculate the dG' in typical physiological concentrations (1 mM)
+        """
+        return util.RT * self._GetSumCoeff() * log(1e-3)
+
+    def dGm_prime(self):
+        """
+            Calculate the dG' in typical physiological concentrations (1 mM)
+        """
+        return self.dG0_prime() + self.dGm_correction()
+
     def reversibility_index(self, pH=util.DEFAULT_PH, pMg=util.DEFAULT_PMG,
                             ionic_strength=util.DEFAULT_IONIC_STRENGTH):
         """
@@ -75,9 +113,8 @@ class Reaction(object):
             Returns:
                 ln_RI - the natural log of the RI
         """
-        ids = set(self.kegg_ids()) - set(['C00001'])
-        sum_coeff = sum(map(self.get_coeff, ids))
-        abs_sum_coeff = sum(map(abs, (map(self.get_coeff, ids))))
+        sum_coeff = self._GetSumCoeff()
+        abs_sum_coeff = self._GetAbsSumCoeff()
         if abs_sum_coeff == 0:
             return inf
         dGm_prime = dG0_prime + util.RT * sum_coeff * log(1e-3)
@@ -116,7 +153,7 @@ class Reaction(object):
         return compound_bag
 
     @staticmethod
-    def parse_formula(formula, name_to_cid=None):
+    def parse_formula(formula, name_to_cid=None, rid=None):
         """
             Parses a two-sided formula such as: 2 C00001 = C00002 + C00003
             
@@ -158,7 +195,10 @@ class Reaction(object):
                 dict(zip(map(name_to_cid.get, sparse_reaction.keys()),
                      sparse_reaction.values()))
             
-        return Reaction(sparse_reaction)
+        if 'C00080' in sparse_reaction:
+            sparse_reaction.pop('C00080')
+        
+        return Reaction(sparse_reaction, rid=rid)
 
     @staticmethod
     def write_compound_and_coeff(compound_id, coeff):

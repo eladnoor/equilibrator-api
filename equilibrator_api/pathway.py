@@ -40,7 +40,7 @@ class ParsedPathway(object):
     Designed for checking input prior to converting to a stoichiometric model.
     """
 
-    def __init__(self, reactions, fluxes, dG0_r_primes,
+    def __init__(self, reactions, fluxes, dG0_r_primes, name_to_cid=None,
                  bounds=None, pH=DEFAULT_PH,
                  ionic_strength=DEFAULT_IONIC_STRENGTH):
         """Initialize.
@@ -58,15 +58,22 @@ class ParsedPathway(object):
         assert len(reactions) == len(dG0_r_primes)
 
         self.reactions = reactions
-        self.reaction_kegg_ids = map(lambda r: r.reaction_kegg_id,
-                                     self.reactions)
         self.fluxes = np.array(fluxes)
         self.dG0_r_prime = np.array(dG0_r_primes)
-
+        dGm_corr = np.array([r.dGm_correction() for r in self.reactions])
+        self.dGm_r_prime = self.dG0_r_prime + dGm_corr
         self.bounds = bounds or DEFAULT_BOUNDS
 
         self.S, self.compound_kegg_ids = self._build_stoichiometric_matrix()
 
+        if name_to_cid is not None:
+            # invert the dictionary and convert the cids back to names
+            cid_to_name = dict(zip(name_to_cid.values(), name_to_cid.keys()))
+            self.compound_names = list(map(cid_to_name.get,
+                                           self.compound_kegg_ids))
+        else:
+            self.compound_names = list(self.compound_kegg_ids)
+            
         nr, nc = self.S.shape
 
         # dGr should be orthogonal to nullspace of S
@@ -139,21 +146,11 @@ class ParsedPathway(object):
 
         return smat, compounds
 
-    @property
-    def reactions_have_dG(self):
-        return np.all([dG is not None for dG in self.dG0_r_prime])
-
-    @property
-    def pathway_model(self):
+    def calc_mdf(self):
         dGs = np.matrix(self.dG0_r_prime).T
         model = PathwayThermoModel(self.S, self.fluxes, dGs,
                                    self.compound_kegg_ids,
-                                   self.reaction_kegg_ids,
                                    concentration_bounds=self.bounds)
-        return model
-
-    def calc_mdf(self):
-        model = self.pathway_model
         mdf = model.mdf_result
         return PathwayMDFData(self, mdf)
 
@@ -178,7 +175,8 @@ class ParsedPathway(object):
 
         reactions = []
         for _, row in reaction_df.iterrows():
-            rxn = Reaction.parse_formula(row['ReactionFormula'], name_to_cid)
+            rxn = Reaction.parse_formula(row['ReactionFormula'], name_to_cid,
+                                         rid=row['ID'])
             rxn.check_full_reaction_balancing()
             reactions.append(rxn)
 
@@ -200,5 +198,6 @@ class ParsedPathway(object):
         pH = keqs_sbtab.getCustomTableInformation('pH')
         ionic_strength = keqs_sbtab.getCustomTableInformation('IonicStrength')
         pp = ParsedPathway(reactions, fluxes_ordered, dgs,
+                           name_to_cid=name_to_cid,
                            bounds=bounds, pH=pH, ionic_strength=ionic_strength)
         return pp

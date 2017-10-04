@@ -11,6 +11,7 @@ import logging
 from util.SBtab import SBtabTools
 from equilibrator_api.pathway import ParsedPathway
 from matplotlib.backends.backend_pdf import PdfPages
+import pandas as pd
 
 if __name__ == '__main__':
 
@@ -42,3 +43,6 @@ if __name__ == '__main__':
     output_pdf.savefig(mdf_res.conc_plot)
     output_pdf.savefig(mdf_res.mdf_plot)
     output_pdf.close()
+    
+    rxn_df = pd.DataFrame(mdf_res.report_reactions)
+    cpd_df = pd.DataFrame(mdf_res.report_compounds)

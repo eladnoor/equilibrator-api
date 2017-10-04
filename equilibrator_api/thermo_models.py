@@ -51,7 +51,7 @@ class PathwayThermoModel(object):
     DEFAULT_C_RANGE = (1e-6, 0.1)
     DEFAULT_PHYSIOLOGICAL_CONC = 1e-3
 
-    def __init__(self, S, fluxes, dG0_r_prime, cids, rids,
+    def __init__(self, S, fluxes, dG0_r_prime, cids,
                  dG0_r_std=None, concentration_bounds=None):
         """Create a pathway object.
 
@@ -95,7 +95,6 @@ class PathwayThermoModel(object):
         self.Nr_active = int(sum(self.fluxes.T != 0))
 
         self.cids = cids
-        self.rids = rids
         self.concentration_bounds = concentration_bounds
 
         if self.concentration_bounds is None:
