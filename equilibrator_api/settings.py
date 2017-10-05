@@ -4,6 +4,7 @@ from numpy import log
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 DATA_DIR = os.path.join(os.path.split(SCRIPT_DIR)[0], 'data')
+TEST_DIR = os.path.join(os.path.split(SCRIPT_DIR)[0], 'tests')
 
 POSSIBLE_REACTION_ARROWS = ['<=>', '<=', '=>', '->', '<->', '=']
 

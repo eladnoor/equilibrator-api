@@ -9,14 +9,14 @@ Created on Sun Aug  6 15:47:09 2017
 import logging
 from numpy import matrix, load, zeros, sqrt
 import os
-from equilibrator_api import util
+from equilibrator_api import settings
 
-PREPROCESS_FNAME = os.path.join(util.DATA_DIR, 'cc_preprocess.npz')
+PREPROCESS_FNAME = os.path.join(settings.DATA_DIR, 'cc_preprocess.npz')
 
 class ComponentContribution(object):
 
-    def __init__(self, pH=util.DEFAULT_PH, pMg=util.DEFAULT_PMG,
-                 ionic_strength=util.DEFAULT_IONIC_STRENGTH):
+    def __init__(self, pH=settings.DEFAULT_PH, pMg=settings.DEFAULT_PMG,
+                 ionic_strength=settings.DEFAULT_IONIC_STRENGTH):
         # load pre-processing matrices (for the uncertainty estimation)
         relpath = os.path.dirname(os.path.realpath(__file__))
         cc_preprocess_fname = os.path.join(relpath, PREPROCESS_FNAME)
@@ -146,8 +146,8 @@ class ComponentContribution(object):
 
         dG0_prime, dG0_uncertainty = self.dG0_prime(reaction)
 
-        E0_prime_mV = 1000.0 * -dG0_prime / (n_e*util.FARADAY)
-        E0_uncertainty = 1000.0 * dG0_uncertainty / (n_e*util.FARADAY)
+        E0_prime_mV = 1000.0 * -dG0_prime / (n_e*settings.FARADAY)
+        E0_uncertainty = 1000.0 * dG0_uncertainty / (n_e*settings.FARADAY)
 
         return E0_prime_mV, E0_uncertainty
 

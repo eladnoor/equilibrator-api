@@ -8,8 +8,7 @@ Created on Sun Oct  1 13:24:15 2017
 
 import argparse
 import logging
-from util.SBtab import SBtabTools
-from equilibrator_api.pathway import ParsedPathway
+from equilibrator_api.pathway import Pathway
 from matplotlib.backends.backend_pdf import PdfPages
 import pandas as pd
 
@@ -27,15 +26,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    sbtabs = SBtabTools.openMultipleSBtabFromFile(args.infile)
-    tdict = dict([(t.getTableInformation()[1].upper(), t) for t in sbtabs])
-    expected_tnames = ['REACTION', 'RELATIVEFLUX', 'CONCENTRATIONCONSTRAINT',
-                       'REACTIONCONSTANT']
-    assert set(expected_tnames).issubset(tdict.keys())
-
-    sbtabs = [tdict[n] for n in expected_tnames]
-    
-    pp = ParsedPathway.from_full_sbtab(*sbtabs)
+    pp = Pathway.from_sbtab(args.infile)
     
     output_pdf = PdfPages(args.outfile)
     mdf_res = pp.calc_mdf()

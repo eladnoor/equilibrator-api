@@ -64,8 +64,9 @@ print u'ln(Reversibility Index) = %.1f\n' % ln_RI
 The reversibility index is a measure of the degree of the reversibility of the reaction that is normalized for stoichiometry. If you are interested in assigning reversibility to reactions we recommend this measure because 1:2 reactions are much "easier" to reverse than reactions with 1:1 or 2:2 reactions. You can see the paper linked above for more information.
 
 # Dependencies:
-- python 2.7
+- python 2.7 or 3.6
 - numpy (preferably >= 1.12.0)
 - scipy (preferably >= 0.19.1)
 - matplotlib (2.0.2)
 - PuLP (1.6.8)
+- pandas (0.20.3)

@@ -2,7 +2,7 @@ import logging
 import numpy as np
 import pulp
 
-from equilibrator_api import util
+from equilibrator_api import settings
 from equilibrator_api.bounds import Bounds
 
 class MDFResult(object):
@@ -110,10 +110,10 @@ class PathwayThermoModel(object):
             dG_r_prime = self.dG0_r_prime.copy()
             for r in range(self.Nr):
                 reactants = list(self.S[:, r].nonzero()[0].flat)
-                dG_r_prime[0, r] += util.RT * log_conc[reactants, 0].T * self.S[reactants, r]
+                dG_r_prime[0, r] += settings.RT * log_conc[reactants, 0].T * self.S[reactants, r]
             return dG_r_prime
         else:
-            return self.dG0_r_prime + util.RT * self.S.T * log_conc
+            return self.dG0_r_prime + settings.RT * self.S.T * log_conc
 
     def GetPhysiologicalConcentrations(self, bounds=None):
         conc = np.matrix(np.ones((self.Nc, 1))) * self.DEFAULT_PHYSIOLOGICAL_CONC
@@ -151,7 +151,7 @@ class PathwayThermoModel(object):
 
         # driving force
         A11 = self.I_dir[inds] * self.dG0_r_std
-        A12 = self.I_dir[inds] * self.S.T * util.RT
+        A12 = self.I_dir[inds] * self.S.T * settings.RT
         A13 = np.ones((len(inds), 1))
 
         # covariance var ub and lb

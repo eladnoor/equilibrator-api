@@ -8,15 +8,16 @@ Created on Sun Oct  1 13:26:31 2017
 import csv
 import logging
 import numpy as np
-
+import io
 from scipy import linalg
+from util.SBtab import SBtabTools
 
 from equilibrator_api.reaction import Reaction
 from equilibrator_api.bounds import DEFAULT_BOUNDS, Bounds
 from equilibrator_api.max_min_driving_force import PathwayMDFData
 from equilibrator_api.thermo_models import PathwayThermoModel
 from equilibrator_api.component_contribution import ComponentContribution
-from equilibrator_api.util import RT, DEFAULT_PH, DEFAULT_IONIC_STRENGTH
+from equilibrator_api.settings import RT, DEFAULT_PH, DEFAULT_IONIC_STRENGTH
 
 class PathwayParseError(Exception):
     pass
@@ -34,7 +35,7 @@ class ViolatesFirstLaw(PathwayParseError):
     pass
 
 
-class ParsedPathway(object):
+class Pathway(object):
     """A pathway parsed from user input.
 
     Designed for checking input prior to converting to a stoichiometric model.
@@ -116,7 +117,7 @@ class ParsedPathway(object):
         equilibrator = ComponentContribution(pH=pH, ionic_strength=ionic_strength)
         dG0_r_primes, dG0_uncertainties = zip(*map(equilibrator.dG0_prime, reactions))
         dG0_r_primes = list(dG0_r_primes)
-        return ParsedPathway(reactions, fluxes, dG0_r_primes, bounds=bounds)
+        return Pathway(reactions, fluxes, dG0_r_primes, bounds=bounds)
 
     def _get_compounds(self):
         """Returns a dictionary of compounds by KEGG ID."""
@@ -159,9 +160,28 @@ class ParsedPathway(object):
             print('%sx %s' % (f, r.write_formula()))
 
     @classmethod
-    def from_full_sbtab(self, reaction_sbtab, flux_sbtab,
-                        bounds_sbtab, keqs_sbtab):
-        """Returns an initialized ParsedPathway."""
+    def from_sbtab(self, sbtab):
+        """
+            read the sbtab file (can be a filename or file handel)
+            and use it to initialize the Pathway
+        """
+        if type(sbtab) == str:
+            with open(sbtab, 'r') as sbtabfile:
+                sbtabs = SBtabTools.openMultipleSBtabFromFile(sbtabfile)
+        elif type(sbtab) == io.TextIOWrapper:
+            sbtabs = SBtabTools.openMultipleSBtabFromFile(sbtab)
+        tdict = dict([(t.getTableInformation()[1].upper(), t) for t in sbtabs])
+        expected_tnames = ['REACTION', 'RELATIVEFLUX', 'CONCENTRATIONCONSTRAINT',
+                           'REACTIONCONSTANT']
+        assert set(expected_tnames).issubset(tdict.keys())
+    
+        sbtabs = [tdict[n] for n in expected_tnames]
+        return Pathway.from_separate_sbtabs(*sbtabs)
+
+    @classmethod
+    def from_separate_sbtabs(self, reaction_sbtab, flux_sbtab,
+                             bounds_sbtab, keqs_sbtab):
+        """Returns an initialized Pathway."""
         bounds = Bounds.from_sbtab(bounds_sbtab)
 
         reaction_df = reaction_sbtab.toDataFrame()
@@ -197,7 +217,7 @@ class ParsedPathway(object):
 
         pH = keqs_sbtab.getCustomTableInformation('pH')
         ionic_strength = keqs_sbtab.getCustomTableInformation('IonicStrength')
-        pp = ParsedPathway(reactions, fluxes_ordered, dgs,
-                           name_to_cid=name_to_cid,
-                           bounds=bounds, pH=pH, ionic_strength=ionic_strength)
+        pp = Pathway(reactions, fluxes_ordered, dgs,
+                     name_to_cid=name_to_cid,
+                     bounds=bounds, pH=pH, ionic_strength=ionic_strength)
         return pp

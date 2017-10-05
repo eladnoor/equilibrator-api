@@ -9,8 +9,8 @@ Created on Sun Oct  1 13:01:52 2017
 import logging
 import re
 from numpy import sqrt
-from equilibrator_api import util
-from numpy import matrix, array, load, zeros, logaddexp, sqrt, log, nan, inf
+from equilibrator_api import settings
+from numpy import matrix, array, load, zeros, logaddexp, log, nan, inf
 
 class Species(object):
 
@@ -34,15 +34,15 @@ class Species(object):
 
         # add the potential related to the pH
         if self.nH > 0:
-            ddG_prime += self.nH * util.RTlog10 * pH
+            ddG_prime += self.nH * settings.RTlog10 * pH
 
         # add the potential related to the ionic strength
-        ddG_prime -= util.DEBYE_HUECKLE_A * (self.z ** 2 - self.nH) * sqrt_I / \
-            (1.0 + util.DEBYE_HUECKLE_B * sqrt_I)
+        ddG_prime -= settings.DEBYE_HUECKLE_A * (self.z ** 2 - self.nH) * sqrt_I / \
+            (1.0 + settings.DEBYE_HUECKLE_B * sqrt_I)
 
         # add the potential related to the Mg ions
         if self.nMg > 0:
-            ddG_prime += self.nMg * (util.RTlog10 * pMg - util.MG_FORMATION_ENERGY)
+            ddG_prime += self.nMg * (settings.RTlog10 * pMg - settings.MG_FORMATION_ENERGY)
 
         return ddG_prime
 
@@ -115,7 +115,7 @@ class Compound(object):
         # Use the fact that we take a log later to offset all values by a
         # constant (the minimum value).
         if len(dG0_prime_vec) > 0:
-            dG0_f_prime = -util.RT * logaddexp.reduce((-1.0 / util.RT) * dG0_prime_vec)
+            dG0_f_prime = -settings.RT * logaddexp.reduce((-1.0 / settings.RT) * dG0_prime_vec)
         else:
             raise Exception('compound contains no species')
 

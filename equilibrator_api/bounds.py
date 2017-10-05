@@ -7,7 +7,7 @@ import os
 
 from copy import deepcopy
 from equilibrator_api.concs import ConcentrationConverter
-from equilibrator_api import util
+from equilibrator_api import settings
 
 
 class InvalidBounds(Exception):
@@ -136,15 +136,15 @@ class Bounds(BaseBounds):
 
     @classmethod
     def from_csv_filename(cls, fname,
-                          default_lb=util.DEFAULT_CONC_LB,
-                          default_ub=util.DEFAULT_CONC_UB):
+                          default_lb=settings.DEFAULT_CONC_LB,
+                          default_ub=settings.DEFAULT_CONC_UB):
         with open(fname, 'rU') as f:
             return cls.from_csv_file(f, default_lb=default_lb, default_ub=default_ub)
 
     @classmethod
     def from_sbtab(cls, sbtab,
-                   default_lb=util.DEFAULT_CONC_LB,
-                   default_ub=util.DEFAULT_CONC_UB):
+                   default_lb=settings.DEFAULT_CONC_LB,
+                   default_ub=settings.DEFAULT_CONC_UB):
         lbs = {}
         ubs = {}
 
@@ -217,5 +217,5 @@ class Bounds(BaseBounds):
         val = self.upper_bounds.get(key) or self.default_ub
         return val
 
-COFACTORS_FNAME = os.path.join(util.DATA_DIR, 'cofactors.csv')
+COFACTORS_FNAME = os.path.join(settings.DATA_DIR, 'cofactors.csv')
 DEFAULT_BOUNDS = Bounds.from_csv_filename(COFACTORS_FNAME)

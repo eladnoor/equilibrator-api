@@ -10,6 +10,9 @@ import unittest
 
 from equilibrator_api.reaction import Reaction
 from equilibrator_api.component_contribution import ComponentContribution
+from equilibrator_api import settings
+from equilibrator_api.pathway import Pathway
+import os
 
 class TestReactionParsing(unittest.TestCase):
     
@@ -64,6 +67,12 @@ class TestReactionParsing(unittest.TestCase):
         self.assertAlmostEqual(E0_prime_mV, -175.2, 1)
         self.assertAlmostEqual(E0_uncertainty, 5.3, 1)
 
+    def test_mdf(self):
+        sbtab_fname = os.path.join(settings.TEST_DIR, 'pathway_ethanol_SBtab.tsv')
+        pp = Pathway.from_sbtab(sbtab_fname)
+        mdf_res = pp.calc_mdf()
+
+        self.assertAlmostEqual(mdf_res.mdf, 1.69, 2)
 
 
 if __name__ == '__main__':

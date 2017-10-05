@@ -11,10 +11,10 @@ import re
 import logging
 from numpy import matrix, zeros, log, nan, inf
 
-from equilibrator_api import util
+from equilibrator_api import settings
 from equilibrator_api.compound import Compound
 
-COMPOUND_JSON_FNAME = os.path.join(util.DATA_DIR, 'cc_compounds.json')
+COMPOUND_JSON_FNAME = os.path.join(settings.DATA_DIR, 'cc_compounds.json')
 
 class Reaction(object):
     # load formation energies from the JSON file
@@ -52,8 +52,8 @@ class Reaction(object):
     def get_compound(self, kegg_id):
         return self.kegg_id_to_compound.get(kegg_id, None)
 
-    def dG0_prime(self, pH=util.DEFAULT_PH, pMg=util.DEFAULT_PMG,
-                  ionic_strength=util.DEFAULT_IONIC_STRENGTH):
+    def dG0_prime(self, pH=settings.DEFAULT_PH, pMg=settings.DEFAULT_PMG,
+                  ionic_strength=settings.DEFAULT_IONIC_STRENGTH):
         dG0_r_prime = 0
         for kegg_id in self.kegg_ids():
             coeff = self.get_coeff(kegg_id)
@@ -85,7 +85,7 @@ class Reaction(object):
         """
             Calculate the dG' in typical physiological concentrations (1 mM)
         """
-        return util.RT * self._GetSumCoeff() * log(1e-3)
+        return settings.RT * self._GetSumCoeff() * log(1e-3)
 
     def dGm_prime(self):
         """
@@ -93,8 +93,8 @@ class Reaction(object):
         """
         return self.dG0_prime() + self.dGm_correction()
 
-    def reversibility_index(self, pH=util.DEFAULT_PH, pMg=util.DEFAULT_PMG,
-                            ionic_strength=util.DEFAULT_IONIC_STRENGTH):
+    def reversibility_index(self, pH=settings.DEFAULT_PH, pMg=settings.DEFAULT_PMG,
+                            ionic_strength=settings.DEFAULT_IONIC_STRENGTH):
         """
             Calculates the reversiblity index according to Noor et al. 2012:
             https://doi.org/10.1093/bioinformatics/bts317
@@ -117,8 +117,8 @@ class Reaction(object):
         abs_sum_coeff = self._GetAbsSumCoeff()
         if abs_sum_coeff == 0:
             return inf
-        dGm_prime = dG0_prime + util.RT * sum_coeff * log(1e-3)
-        ln_RI = (2.0 / abs_sum_coeff) * dGm_prime / util.RT
+        dGm_prime = dG0_prime + settings.RT * sum_coeff * log(1e-3)
+        ln_RI = (2.0 / abs_sum_coeff) * dGm_prime / settings.RT
         return ln_RI
 
     @staticmethod
@@ -165,7 +165,7 @@ class Reaction(object):
                 The set of substrates, products and the reaction direction
         """
         tokens = []
-        for arrow in util.POSSIBLE_REACTION_ARROWS:
+        for arrow in settings.POSSIBLE_REACTION_ARROWS:
             if formula.find(arrow) != -1:
                 tokens = formula.split(arrow, 2)
                 break
