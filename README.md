@@ -70,6 +70,6 @@ The reversibility index is a measure of the degree of the reversibility of the r
 - scipy (preferably >= 0.19.1)
 - PuLP (1.6.8)
 - tablib (0.12.1)
-- (optional) matplotlib (2.0.2)
-- (optional) pandas (0.20.3)
+- matplotlib (2.0.2)
+- pandas (0.20.3)
 
