@@ -66,8 +66,10 @@ The reversibility index is a measure of the degree of the reversibility of the r
 # Dependencies:
 - python 2.7 or 3.6
 - numpy (preferably >= 1.12.0)
+## Only if running MDF analysis:
 - scipy (preferably >= 0.19.1)
-- matplotlib (2.0.2)
 - PuLP (1.6.8)
-- pandas (0.20.3)
 - tablib (0.12.1)
+- (optional) matplotlib (2.0.2)
+- (optional) pandas (0.20.3)
+

@@ -6,7 +6,6 @@ Created on Sun Oct  1 13:28:00 2017
 @author: noore
 """
 import numpy as np
-import matplotlib.pyplot as plt
 
 class ReactionMDFData(object):
 
@@ -103,6 +102,8 @@ class PathwayMDFData(object):
 
     @property
     def conc_plot(self):
+        import matplotlib.pyplot as plt
+
         ys = np.arange(0, len(self.compound_data))
         concs = np.array([c.concentration for c in self.compound_data])
         cnames = [str(c.compound) for c in self.compound_data]
@@ -149,6 +150,8 @@ class PathwayMDFData(object):
     
     @property
     def mdf_plot(self):
+        import matplotlib.pyplot as plt
+
         dgms = [0] + [r.dGm for r in self.reaction_data]
         cumulative_dgms = np.cumsum(dgms)
 
