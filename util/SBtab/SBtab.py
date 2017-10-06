@@ -108,7 +108,7 @@ class SBtabTable():
                     new_row.append('Ascii violation error! Please check input file!')
             new_table.append('\t'.join(new_row))
 
-        tablibtable = tablibIO.importSetNew('\n'.join(new_table),self.filename+'.csv')
+        tablibtable = tablibIO.importSetNew('\n'.join(new_table),
 
         return tablibtable
 
