@@ -109,6 +109,8 @@ class SBtabTable():
             new_table.append('\t'.join(new_row))
 
         tablibtable = tablibIO.importSetNew('\n'.join(new_table),
+                                            self.filename+'.tsv',
+                                            separator='\t')
 
         return tablibtable
 
