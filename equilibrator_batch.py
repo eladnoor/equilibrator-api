@@ -38,10 +38,9 @@ if __name__ == '__main__':
     infile_lines = list(filter(None, map(str.strip, args.infile.readlines())))
     reactions = list(map(Reaction.parse_formula, infile_lines))
 
-    equilibrator = ComponentContribution()
+    equilibrator = ComponentContribution(pH=args.ph, ionic_strength=args.i)
 
-    dG0_prime, U = equilibrator.dG0_prime_multi(
-            reactions, pH=args.ph, ionic_strength=args.i)
+    dG0_prime, U = equilibrator.dG0_prime_multi(reactions)
 
     writer = csv.writer(args.outfile)
     header = ['reaction', 'pH', 'ionic strength [M]', 'dG\'0 [kJ/mol]',

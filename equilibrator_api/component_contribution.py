@@ -83,7 +83,7 @@ class ComponentContribution(object):
 
     def dG0_prime(self, reaction):
         """
-            Calculate the dG'0 of a single reaction or a list of reactions
+            Calculate the dG'0 of a single reaction
             
             Returns:
                 dG0_r_prime     - estimated Gibbs free energy of reaction
@@ -104,12 +104,25 @@ class ComponentContribution(object):
         dG0_uncertainty = sqrt(U[0, 0])
         return dG0_r_prime, dG0_uncertainty
 
-    def dG0_prime_multi(self, reactions):
+    def reversibility_index(self, reaction):
         """
-            Calculate the dG'0 of a single reaction or a list of reactions
-
+            Calculate the reversibility index (ln Gamma) of a single reaction
+            
             Returns:
                 dG0_r_prime     - estimated Gibbs free energy of reaction
+                dG0_uncertainty - standard deviation of estimation, multiply
+                                  by 1.96 to get a 95% confidence interval
+                                  (which is the value shown on eQuilibrator)
+        """
+        return reaction.reversibility_index(pH=self.pH, pMg=self.pMg,
+                                            ionic_strength=self.ionic_strength)
+
+    def dG0_prime_multi(self, reactions):
+        """
+            Calculate the dG'0 of a list of reactions
+
+            Returns:
+                dG0_r_primes    - estimated Gibbs free energy of the reactions
                 U               - correlation matrix of the uncertainties
                                   the values on the diagonal are the variances,
                                   i.e. the square of the standard deviations
@@ -120,10 +133,10 @@ class ComponentContribution(object):
         if not isinstance(reactions, list):
             reactions = [reactions]
 
-        dG0_r_prime = map(lambda r: r.dG0_prime(pH=self.pH, pMg=self.pMg,
+        dG0_r_primes = map(lambda r: r.dG0_prime(pH=self.pH, pMg=self.pMg,
                                                 ionic_strength=self.ionic_strength),
                           reactions)
-        dG0_r_prime = matrix(list(dG0_r_prime)).T
+        dG0_r_primes = matrix(list(dG0_r_primes)).T
 
         X, G = self.reactions_to_matrices(reactions)
         U = X.T * self.C1 * X + \
@@ -131,7 +144,7 @@ class ComponentContribution(object):
             G.T * self.C2.T * X + \
             G.T * self.C3 * G
 
-        return dG0_r_prime, U
+        return dG0_r_primes, U
 
     def E0_prime(self, reaction):
         """

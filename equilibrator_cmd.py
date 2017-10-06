@@ -49,26 +49,24 @@ except ValueError as e:
     logging.error(str(e))
     sys.exit(-1)
 
-equilibrator = ComponentContribution()
+equilibrator = ComponentContribution(pH=args.ph, ionic_strength=args.i)
 
 n_e = reaction.check_half_reaction_balancing()
 if n_e is None:
     logging.error('reaction is not chemically balanced')
     sys.exit(-1)
 elif n_e == 0:
-    dG0_prime, dG0_uncertainty = equilibrator.dG0_prime(
-        reaction, pH=args.ph, ionic_strength=args.i)
+    dG0_prime, dG0_uncertainty = equilibrator.dG0_prime(reaction)
     sys.stdout.write(u'\u0394G\'\u00B0 = %.1f \u00B1 %.1f kJ/mol\n' %
                      (dG0_prime, dG0_uncertainty))
 
-    ln_RI = reaction.reversibility_index(pH=args.ph, ionic_strength=args.i)
+    ln_RI = equilibrator.reversibility_index(reaction)
     sys.stdout.write(u'ln(Reversibility Index) = %.1f\n' % ln_RI)
 
 else:  # treat as a half-reaction
     logging.warning('This reaction isn\'t balanced, but can still be treated'
                     ' as a half-reaction')
-    E0_prime_mV, E0_uncertainty = equilibrator.E0_prime(
-            reaction, pH=args.ph, ionic_strength=args.i)
+    E0_prime_mV, E0_uncertainty = equilibrator.E0_prime(reaction)
     sys.stdout.write(
         u'E\'\u00B0 = %.1f \u00B1 %.1f mV\n' %
         (E0_prime_mV, E0_uncertainty))

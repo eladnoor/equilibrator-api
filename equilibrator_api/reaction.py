@@ -248,6 +248,7 @@ class Reaction(object):
 
         elements, Ematrix = self._get_element_matrix()
         conserved = coeffs * Ematrix
+        conserved = conserved.round(3)
 
         atom_balance_dict = dict([(e, c) for (e, c) in
                                   zip(elements, conserved.flat) if (c != 0)])
