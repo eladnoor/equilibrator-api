@@ -3,4 +3,4 @@ scipy>=0.16.1
 pulp>=1.6.8
 tablib>=0.12.1
 pandas>=0.20.3
-glpk>=0.3
+
