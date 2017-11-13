@@ -7,12 +7,9 @@ Created on Thu Aug 10 17:22:11 2017
 """
 
 import unittest
-
-from equilibrator_api.reaction import Reaction
-from equilibrator_api.component_contribution import ComponentContribution
-from equilibrator_api import settings
-from equilibrator_api.pathway import Pathway
 import os
+
+from equilibrator_api import Reaction, ComponentContribution, Pathway, settings
 
 class TestReactionParsing(unittest.TestCase):
     
