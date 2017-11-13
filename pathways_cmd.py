@@ -8,7 +8,7 @@ Created on Sun Oct  1 13:24:15 2017
 
 import argparse
 import logging
-from equilibrator_api.pathway import Pathway
+from equilibrator_api import Pathway
 from matplotlib.backends.backend_pdf import PdfPages
 import pandas as pd
 

@@ -13,8 +13,7 @@ already cached in our database), at a given pH and I.
 import argparse
 import logging
 import sys
-from equilibrator_api.component_contribution import ComponentContribution
-from equilibrator_api.reaction import Reaction
+from equilibrator_api import Reaction, ComponentContribution
 
 
 def MakeParser():

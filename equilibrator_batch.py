@@ -5,9 +5,7 @@ Created on Mon Jan 25th 2015
 @author: flamholz
 """
 
-from equilibrator_api.component_contribution import ComponentContribution
-from equilibrator_api.reaction import Reaction
-
+from equilibrator_api import ComponentContribution, Reaction
 import logging
 import argparse
 import csv
