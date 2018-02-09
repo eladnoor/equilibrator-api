@@ -1,6 +1,6 @@
 # equilibrator-api
 
-| ![eQuilibrator logo](img/equilibrator_logo_700px.png) |
+| ![eQuilibrator logo](img/equilibrator_logo.png) |
 |:--:| 
 | [eQuilibrator](http://equilibrator.weizmann.ac.il/) |
 
