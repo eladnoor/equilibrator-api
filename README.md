@@ -1,4 +1,5 @@
-![eQuilibrator logo](img/equilibrator_logo.png)
+![eQuilibrator logo](img/logo.svg)
+<img src="img/logo.svg">
 
 A command-line API with minimal dependencies for calculation of standard thermodynamic potentials of biochemical reactions using the data found on [eQuilibrator](http://equilibrator.weizmann.ac.il/).
 Does not require any network connections.
