@@ -9,7 +9,8 @@ Created on Thu Aug 10 17:22:11 2017
 import unittest
 import os
 
-from equilibrator_api import Reaction, ComponentContribution, Pathway, settings
+from equilibrator_api import Reaction, ComponentContribution, Pathway, \
+    ReactionMatcher, settings
 
 class TestReactionParsing(unittest.TestCase):
     
@@ -71,6 +72,25 @@ class TestReactionParsing(unittest.TestCase):
 
         self.assertAlmostEqual(mdf_res.mdf, 1.69, 2)
 
+    def test_reaction_matcher(self):
+        formulas = [('ATP + H2O <=> ADP + Phosphate',
+                     {'C00002': -1, 'C00001': -1, 'C00008': 1, 'C00009': 1}),
+                    ('O2 + 2 NADH <=> 2 NAD+ + 2 H2O',
+                     {'C00007': -1, 'C00004': -2, 'C00003': 2, 'C00001': 2}),
+                    ('O2 + 2 NADH <=> 2 NAD+ + 2 H2O',
+                     {'C00007': -1, 'C00004': -2, 'C00003': 2, 'C00001': 2}),
+                    ('ATP + D-arbino-hexulose <=> ADP + D-Fructose-1-phophte', # with some typos
+                     {'C00002': -1, 'C00095': -1, 'C00008': 1, 'C01094': 1}),
+                    ]
+        
+        rm = ReactionMatcher()
+        for plaintext, kegg_id_to_coeff in formulas:
+            rxn = rm.match(plaintext)
+            if rxn is None:
+                self.fail('unable to parse the plaintext formula\n' + plaintext)
+            else:
+                self.assertDictEqual(rxn.kegg_id_to_coeff, kegg_id_to_coeff)
+        
 
 if __name__ == '__main__':
     unittest.main()

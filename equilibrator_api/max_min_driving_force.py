@@ -142,7 +142,7 @@ class PathwayMDFData(object):
         ax.set_xlabel('Concentration (M)')
         ax.set_xscale('log')
 
-        ax.set_xlim(1e-7, 1.5)
+        ax.set_xlim(default_lb*0.1, 1.5)
         ax.set_ylim(-1.5, len(self.compound_data) + 0.5)
         
         conc_figure.tight_layout()

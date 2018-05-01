@@ -70,4 +70,7 @@ The reversibility index is a measure of the degree of the reversibility of the r
 - tablib (0.12.1)
 - matplotlib (2.0.2)
 - pandas (0.20.3)
-
+### Only if planning to use ReactionMatcher:
+- nltk (3.2.5)
+- pandas (0.20.3)
+- pyparsing (2.2.0)
