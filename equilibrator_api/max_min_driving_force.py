@@ -170,7 +170,6 @@ class PathwayMDFData(object):
         ax.set_xticklabels(xticklabels, rotation=45, ha='right')
         ax.grid(color='grey', linestyle='--', linewidth=1, alpha=0.2)
 
-        # TODO: Consider using reaction IDs from the file as xticks?
         ax.set_xlabel('Reaction Step')
         ax.set_ylabel("Cumulative $\Delta_r G'$ (kJ/mol)")
         ax.legend(loc='best')

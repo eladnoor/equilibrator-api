@@ -25,7 +25,7 @@ Noor E, Haraldsdóttir HS, Milo R, Fleming RMT. Consistent estimation of Gibbs e
 Import the API and create an instance. Creating the EquilibratorAPI class instance reads all the data that is used to calculate thermodynamic potentials of reactions.
 
 ```python
-from equilibrator_api import ComponentContribution, Reaction
+from equilibrator_api import ComponentContribution, Reaction, ReactionMatcher
 eq_api = ComponentContribution(pH=6.5, ionic_strength=0.2)  # loads data
 ```
 
@@ -34,6 +34,12 @@ You can parse a reaction from a KEGG-style reaction string. The example given is
 ```python
 rxn_str = "C00002 + C00001 = C00008 + C00009"
 rxn = Reaction.parse_formula(rxn_str)
+```
+
+Alternatively, you can use plaintext to describe the reaction, just like in eQuilibrator:
+```python
+reaction_matcher = ReactionMatcher()
+rxn = reaction_matcher.match('ATP + H2O = ADP + orthophosphate')
 ```
 
 We highly recommend that you check that the reaction is atomically balanced (conserves atoms) and charge balanced (redox neutral). We've found that it's easy to accidentally write unbalanced reactions in this KEGG-style format and so we always check ourselves.
